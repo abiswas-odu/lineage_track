@@ -35,8 +35,7 @@ for i=1:r
 end
 mean_intensity = mean(tf_table(:,3));
 
-% Color the nodes
-%%
+%% Color the nodes
 blackout_node_keys = get_blackout_nodes(G_based_on_nn, ...
     blackout_begin_labels, ...
     blackout_end_labels);

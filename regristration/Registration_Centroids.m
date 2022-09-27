@@ -31,14 +31,15 @@ numThreads = 4;
 %Change path here to point to CPD2 folder
 addpath(genpath('../CPD2/core'));
 addpath(genpath('../CPD2/data'));
+addpath(genpath('../YAMLMatlab_0.4.3'));
+addpath(genpath('../klb_io'));
+addpath(genpath('../common'));
 
-% What is the prefix for the embryo names?
-filename_seg_base = 'C:/Users/ab50/Documents/data/posfai_cell_tracking/registration_test/stack_3_channel_2_obj_left/labels/klbOut_Cam_Long_%05d.lux.label.klb';
-filename_seg_base_corr = 'C:/Users/ab50/Documents/data/posfai_cell_tracking/registration_test/stack_3_channel_2_obj_left/labels/klbOut_Cam_Long_%05d.lux_SegmentationCorrected.klb';
+config_opts = ReadYaml('C:/Users/ab50/Documents/data/posfai_cell_tracking/registration_test/stack_3_channel_2_obj_left/config.yaml');
 
 % Name of output file
-output_dir = 'C:/Users/ab50/Documents/data/posfai_cell_tracking/registration_test/stack_3_channel_2_obj_left/';
-registration_filename = fullfile(output_dir,'transforms.mat';
+registration_filename = fullfile(config_opts.output_dir, ...
+    strcat(config_opts.output_file_name_prefix,'_transforms.mat'));
 
 
 % Which pairs of frames to run over. Remember that the first frame is 0.
@@ -92,32 +93,16 @@ for ii = 1:size(frame_pairs, 1)
 
     fprintf('Beginning Registration Pair (%d, %d)...', frame_pair(1), frame_pair(2));
     
-    % read in segmented images
-    filename_seg_base_nspec = count(filename_seg_base, '%');
-    filename_seg_base_corr_nspec = count(filename_seg_base_corr, '%');
+    % read in segmented images and rescale 
+    seg1 = read_embryo_frame(config_opts.data_path, config_opts.name_of_embryo, ...
+        config_opts.suffix_for_embryo, ...
+        config_opts.suffix_for_embryo_alternative, ...
+        frame_pair(1));
 
-    filename_seg = sprintf(filename_seg_base, frame_pair(1) * ones(1, filename_seg_base_nspec));
-    filename_seg_corr = sprintf(filename_seg_base_corr, frame_pair(1) * ones(1, filename_seg_base_corr_nspec));
-    if isfile(filename_seg_corr)
-        seg1 = readKLBstack(filename_seg_corr, numThreads);
-    else
-        seg1 = readKLBstack(filename_seg, numThreads);
-    end
-    
-    filename_seg = sprintf(filename_seg_base, frame_pair(2) * ones(1, filename_seg_base_nspec));
-    filename_seg_corr = sprintf(filename_seg_base_corr, frame_pair(2) * ones(1, filename_seg_base_corr_nspec));
-    if isfile(filename_seg_corr)
-        seg2 = readKLBstack(filename_seg_corr, numThreads);
-    else
-        seg2 = readKLBstack(filename_seg, numThreads);
-    end
-    
-    % Rescale image 
-    resXY = 0.208;
-    resZ = 2.0;
-    reduceRatio = 1/4;
-    seg1 = isotropicSample_nearest(seg1, resXY, resZ, reduceRatio);
-    seg2 = isotropicSample_nearest(seg2, resXY, resZ, reduceRatio);
+    seg2 = read_embryo_frame(config_opts.data_path, config_opts.name_of_embryo, ...
+        config_opts.suffix_for_embryo, ...
+        config_opts.suffix_for_embryo_alternative, ...
+        frame_pair(2));
 
     % Exclude regions in segmented image whose mean intensities are within 2 stds of the background
     if use_preprocess_false_positives
@@ -318,6 +303,7 @@ for i=1:endframe
     newT = [T(2),T(1),T(3)];
     store_registration{i,1}.Rotation = newR;
     store_registration{i,1}.Translation = newT;
+    store_registration{i,1}.minSigma = adjusted_registration{i+1,1}.minSigma;
 end
 
 % save as mat file
