@@ -1,10 +1,22 @@
+%% Script to color the tree based on the intensity of images
 
-load ../tracking/COMBINEDGRAPH_1-72.mat % Graph file from tracking
-tf_table = csvread('nanog_tf-1.csv',1,0); % Intensities file 
-leaf_node = '072'; % The leaf node timestamp ID
+config_path = 'C:/Users/ab50/Documents/git/lineage_track/test';
 
-begin_labels = {'001_015', '001_015'}; % Begin label of intensity line plot
-end_labels = {'072_212', '072_211'}; % End label of intensity line plot
+%% %%%%% NO CHNAGES BELOW %%%%%%%
+version = 3.1;
+addpath(genpath('../YAMLMatlab_0.4.3'));
+
+config_opts = ReadYaml(fullfile(config_path,'config.yaml'));
+
+graph_file = fullfile(config_opts.output_dir, ...
+    strcat(config_opts.track_file_name_prefix,'_',string(config_opts.track_begin_frame),'_', ...
+    string(config_opts.track_end_frame + 1),'_graph.mat'));
+load(graph_file) % Graph file from tracking
+tf_table = csvread(config_opts.intensity_file,1,0); % Intensities file 
+leaf_node = config_opts.leaf_node; % The leaf node timestamp ID
+
+begin_labels = config_opts.begin_labels; % Begin label of intensity line plot
+end_labels = config_opts.end_labels; % End label of intensity line plot
 
 % Set the colormap and other options
 color_map_setting = copper(10); 
@@ -20,10 +32,9 @@ marker_size = 5; % The node marker size
 enable_smooth = 1; % Set to 0 to disable smoothing
 
 % Specify paired nodel labels that are to be shown in black color
-blackout_begin_labels = {'001_007', '001_007'}; % Begin label of blackout start
-blackout_end_labels = {'072_007', '072_018'}; % End label of blackout ends matched to the begin labels
+blackout_begin_labels = config_opts.blackout_begin_labels; % Begin label of blackout start
+blackout_end_labels = config_opts.blackout_end_labels; % End label of blackout ends matched to the begin labels
 
-%%%%%%% NO CHNAGES BELOW %%%%%%%
 version = 3.1;
 % Extract the intensities
 [r, c] = size(tf_table);

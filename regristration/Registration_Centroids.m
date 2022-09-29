@@ -24,6 +24,10 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+config_path = 'C:/Users/ab50/Documents/git/lineage_track/test';
+
+%% %%%%% NO CHNAGES BELOW %%%%%%%
+
 % Set numThreads to the number of cores in your computer. If your processor
 % supports hyperthreading/multithreading then set it to 2 x [number of cores]
 numThreads = 4;
@@ -35,17 +39,16 @@ addpath(genpath('../YAMLMatlab_0.4.3'));
 addpath(genpath('../klb_io'));
 addpath(genpath('../common'));
 
-config_opts = ReadYaml('C:/Users/ab50/Documents/data/posfai_cell_tracking/registration_test/stack_3_channel_2_obj_left/config.yaml');
+config_opts = ReadYaml(fullfile(config_path,'config.yaml'));
 
 % Name of output file
 registration_filename = fullfile(config_opts.output_dir, ...
-    strcat(config_opts.output_file_name_prefix,'_transforms.mat'));
-
+    strcat(config_opts.register_file_name_prefix,'_transforms.mat'));
 
 % Which pairs of frames to run over. Remember that the first frame is 0.
 % If you would like to re-register for certain frame pairs then set [frame_pairs] accordingly.
-first_frame = 0;
-final_frame = 126;
+first_frame = config_opts.register_begin_frame;
+final_frame = config_opts.register_end_frame;
 frame_pairs = [(first_frame:final_frame-1).', (first_frame+1:final_frame).'];
 
 % Voxel size before making isotropic
@@ -78,12 +81,7 @@ numTrials = 1e3;
 final_full_register = false;
 
 tic;
-% Load previous registration
-if isfile(registration_filename)
-    load(registration_filename);
-else
-    registration = [];
-end
+registration = [];
 
 adjusted_registration = cell(size(frame_pairs, 1), 1);
 for ii = 1:size(frame_pairs, 1)
@@ -285,7 +283,8 @@ registration = registration(ind,:);
 %save(Registration_filename, 'registration'); 
 
 % Save output (standard version)
-nframes = size(adjusted_registration,1);
+%nframes = size(adjusted_registration,1);
+nframes = final_frame;
 store_registration = cell(nframes,1);
 
 % david's can start at 0 (even if start frame is 50 - that's where it will
@@ -294,16 +293,18 @@ store_registration = cell(nframes,1);
 % order of T/R (2,1,3)
 % AND remove 0 so starts at 1
 
-endframe = nframes - 1;
-for i=1:endframe
-    R = adjusted_registration{i+1,1}.Rotation;
-    T = adjusted_registration{i+1,1}.Translation;
-    Q = [[0,1,0];[1,0,0];[0,0,1]];
-    newR = Q*R*Q;
-    newT = [T(2),T(1),T(3)];
-    store_registration{i,1}.Rotation = newR;
-    store_registration{i,1}.Translation = newT;
-    store_registration{i,1}.minSigma = adjusted_registration{i+1,1}.minSigma;
+endframe = final_frame - 1;
+for i=first_frame:endframe
+    R = adjusted_registration{i-first_frame+1,1}.Rotation;
+    T = adjusted_registration{i-first_frame+1,1}.Translation;
+    %Q = [[0,1,0];[1,0,0];[0,0,1]];
+    %newR = Q*R*Q;
+    %newT = [T(2),T(1),T(3)];
+    store_registration{i,1}.Rotation = R;
+    store_registration{i,1}.Translation = T;
+    store_registration{i,1}.minSigma = adjusted_registration{i-first_frame+1,1}.minSigma;
+    store_registration{i,1}.Centroids1 = adjusted_registration{i-first_frame+1,1}.Centroids1;
+    store_registration{i,1}.Centroids2 = adjusted_registration{i-first_frame+1,1}.Centroids2;
 end
 
 % save as mat file

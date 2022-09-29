@@ -3,39 +3,29 @@ function [] = volume_track_nuclei_divisions()
 % This is Masha's version of tracking, to run on early mouse embryos.
 % This code attempts to construct the full lineage tree, 
 % in particular, identify mitotic events.
-
 % Pre-registration is advised but not necessary.
 
 % SETUP starts here.
 
-% CPD SETUP
-% Please add your paths to CPD2
+config_path = 'C:/Users/ab50/Documents/git/lineage_track/test';
+
+%%%%%%% NO CHNAGES BELOW %%%%%%%
+% CPD and Library Setup
 addpath(genpath('../CPD2/core'));
 addpath(genpath('../CPD2/data'));
-% Please do not move this line
+addpath(genpath('../YAMLMatlab_0.4.3'));
 addpath(genpath('../klb_io/'));
 addpath(genpath('../common/'));
 
-% LABELS SETUP
-% What is the prefix for the embryo names?
-%name_of_embryo = '/Users/mavdeeva/Desktop/mouse/stack_1_210809/nuclei_labels/Stardist3D_Cam_Long_';
-data_path = 'C:/Users/ab50/Documents/data/posfai_cell_tracking/registration_test/stack_3_channel_2_obj_left/labels';
-name_of_embryo =  'klbOut_Cam_Long_';
-name_of_embryo = fullfile(data_path,name_of_embryo);
-% Suffix: yours is probably '.lux.tif'
-%suffix_for_embryo = '.lux.tif';
-%suffix_for_embryo = '.lux.klb';
-suffix_for_embryo = '.lux.label.klb';
-suffix_for_embryo_alt = '.lux_SegmentationCorrected.klb';
-% Where to store the tree
-output_path = 'C:/Users/ab50/Documents/data/posfai_cell_tracking/registration_test/stack_3_channel_2_obj_left/tracking';
+config_opts = ReadYaml(fullfile(config_path,'config.yaml'));
 
 % REGISTRATION SETUP
 % Do we need to register the whole sample?
 to_register = false;
 % if registration is available, we can use it
 %trans_path = './examples/stack_1/stack_1_transformsMatchGood1_125.mat';
-trans_path = fullfile(data_path, 'transforms.mat');
+trans_path = fullfile(config_opts.output_dir, ...
+    strcat(config_opts.register_file_name_prefix,'_transforms.mat'));
 % frames that need to be re-registered
 register_again = [];%[10, 13];%[16];
 % define threshold for registration (if necessary)
@@ -43,7 +33,8 @@ sigma_thres = 30;
 
 % TREE SETUP
 % if ground truth tree (for testing) is available, we can use it to clean labels
-tree_path = '';%'./examples/stack_1/stack_1_nuclear_from_Hayden_fixed.mat';
+tree_path = '';
+next_graph_file = '';
 % should we consider only labels present in ground truth tree above?
 clean_data = false;
 
@@ -52,12 +43,15 @@ vol_thres = 1000;
 
 % PLOTTING SETUP
 plot_all = true;
+% Set plot sizes 
+plot_width = 600;
+plot_height = 400;
 
 % IMAGE INDICES
 % to consider overall
-which_number_vect = 1:100;
+which_number_vect = 1:config_opts.track_end_frame+1;
 % to use for tracking
-inds_to_track = 1:100;
+inds_to_track = config_opts.track_begin_frame:config_opts.track_end_frame;
 
 %-----END_OF_MAIN_SETUP-----
 
@@ -81,7 +75,6 @@ dist_cent_thres = 100;
 G_based_on_nn = graph;
 valid_time_indices = which_number_vect;
 store_registration = cell((length(valid_time_indices)-1), 1);
-%sigma2_vect_saved = zeros((length(valid_time_indices)-1), 1);
 
 for time_index_index = inds_to_track
     if ~plot_all
@@ -102,78 +95,26 @@ for time_index_index = inds_to_track
     time_index_plus_1 = valid_time_indices(time_index_index+1);
     
     % store combined image for both.
-    emb_name = [name_of_embryo,num2str(time_index,'%05.5d'),suffix_for_embryo];
-    if ~isfile(emb_name)
-        emb_name = [name_of_embryo,num2str(time_index,'%05.5d'), suffix_for_embryo_alt];
-        if ~isfile(emb_name)
-            disp('file does not exist, passing to next iteration');
-            continue
-        end
-    end
-    if endsWith(suffix_for_embryo, 'klb')
-        combined_image = readKLBstack(emb_name);
-        combined_image = permute(combined_image, [2 1 3]);
-    elseif endsWith(suffix_for_embryo, 'tif')|endsWith(suffix_for_embryo, 'tiff')
-        A = imread(emb_name,1);
-        tiff_info = imfinfo(emb_name);
-        % combine all tiff stacks into 1 3D image.
-        combined_image = zeros(size(A,1), size(A,2), size(tiff_info, 1));
-        for j = 1:size(tiff_info, 1)
-            A = imread(emb_name,j);
-            combined_image(:,:,j) = A(:,:,1);
-        end
-    else
-        error('Filename should end with tif, tiff or klb');
-    end
-    combined_image1 = combined_image;
-  
-    resXY = 0.208;
-    resZ = 2.0;
-    reduceRatio = 1/4;
-    combined_image1 = isotropicSample_nearest(double(combined_image1), resXY, resZ, reduceRatio);
+    combined_image1 = read_embryo_frame(config_opts.data_path, config_opts.name_of_embryo, ...
+        config_opts.suffix_for_embryo, ...
+        config_opts.suffix_for_embryo_alternative, ...
+        time_index);
 
-    emb_name = [name_of_embryo,num2str(time_index_plus_1,'%05.5d'),suffix_for_embryo];
-    if ~isfile(emb_name)
-        emb_name = [name_of_embryo,num2str(time_index_plus_1,'%05.5d'), suffix_for_embryo_alt];
-        if ~isfile(emb_name)
-            disp('file does not exist, passing to next iteration');
-            continue
-        end
-    end
-    if endsWith(suffix_for_embryo, 'klb')
-        combined_image = readKLBstack(emb_name);
-        combined_image = permute(combined_image, [2 1 3]);
-    elseif endsWith(suffix_for_embryo, 'tif')|endsWith(suffix_for_embryo, 'tiff')
-        A = imread(emb_name,1);
-        tiff_info = imfinfo(emb_name);
-        % combine all tiff stacks into 1 3D image.
-        combined_image = zeros(size(A,1), size(A,2), size(tiff_info, 1));
-        for j = 1:size(tiff_info, 1)
-            A = imread(emb_name,j);
-            combined_image(:,:,j) = A(:,:,1);
-        end
-    else
-        error('Filename should end with tif, tiff or klb');
-    end
-    combined_image2 = combined_image;
-    
-    resXY = 0.208;
-    resZ = 2.0;
-    reduceRatio = 1/4;
-    combined_image2 = isotropicSample_nearest(double(combined_image2), resXY, resZ, reduceRatio);
-    
+    combined_image2 = read_embryo_frame(config_opts.data_path, config_opts.name_of_embryo, ...
+        config_opts.suffix_for_embryo, ...
+        config_opts.suffix_for_embryo_alternative, ...
+        time_index_plus_1);
+  
     % STORE MESHGRID
     [X, Y, Z] = meshgrid(1:size(combined_image1, 2), 1:size(combined_image1, 1), 1:size(combined_image1, 3));
     
     % FRACTION OF POINTS (DOWNSAMPLING)
     fraction_of_selected_points =  1/10;  % slow to run at full scale - but make full res points and xform?
-    %
     find1 = find(combined_image1(:)~=0);  % this is the indices into combined_image1 to get indices into (X,Y,Z) to the full set of point
     number_of_points = length(find1);
     
     % why random points - why not just subsample by 10 ?
     p = randperm(number_of_points,round(number_of_points * fraction_of_selected_points));
-    %full_ptCloud1 =  [X(find1), Y(find1), Z(find1)] - [mean(X(find1)), mean(Y(find1)), mean(Z(find1))];
     find1 = find1(p);
     
     ptCloud1 = [X(find1), Y(find1), Z(find1)] - [mean(X(find1)), mean(Y(find1)), mean(Z(find1))];
@@ -295,7 +236,8 @@ for time_index_index = inds_to_track
     end
     %sigma2_vect(which_rot) = sigma2;
     store_registration{time_index_index, 1} = Transform;
-    figure; hold all; title('After registering Y to X.'); cpd_plot_iter(ptCloud1, Transform.Y);
+    f = figure; f.Position = [50 50 plot_width plot_height]; hold all; 
+    title('After registering Y to X.'); cpd_plot_iter(ptCloud1, Transform.Y);
     % End of registration
     
     % Begin tracking
@@ -517,45 +459,87 @@ for time_index_index = inds_to_track
     %nd=nd(:,1);
     disp('Final matching:')
     disp(nn(:,1));
-    
+    color_vec = [];
+    color_map_setting = [1 0 0; 0 0 1];
     sample_graph = graph;
+    missing_nodes  = cell2table(cell(0, 3), 'VariableNames', {'xpos' 'ypos' 'zpos'}); 
     for iind = 1:length(cell_labels_I_care_about1)
         this_label = cell_labels_I_care_about1(iind);
         
-        
         % store node props table... so that node can be added with volume
-        NodePropsTable = table({[num2str(time_index,'%05.3d'),'_', num2str(this_label,'%05.3d')]}, center_point_for_each_label1(iind, 1), center_point_for_each_label1(iind, 2), center_point_for_each_label1(iind, 3), ...
+        node_id = {[num2str(time_index,'%05.3d'),'_', ...
+            num2str(this_label,'%05.3d')]};
+        NodePropsTable = table(node_id, ...
+            center_point_for_each_label1(iind, 1), ...
+            center_point_for_each_label1(iind, 2), ...
+            center_point_for_each_label1(iind, 3), ...
             'VariableNames',{'Name' 'xpos' 'ypos' 'zpos'});
         
         sample_graph = addnode(sample_graph, NodePropsTable);
-        
+        % Adding nodes to the main graph to show the single ones
+        if numnodes(G_based_on_nn) > 0 && findnode(G_based_on_nn, node_id) == 0
+            G_based_on_nn = addnode(G_based_on_nn, NodePropsTable);
+        elseif numnodes(G_based_on_nn) == 0
+            G_based_on_nn = addnode(G_based_on_nn, NodePropsTable);
+        end
+        if ismember(this_label,nn)
+            color_vec = [color_vec; 1];
+        else
+            color_vec = [color_vec; 1];
+            missing_nodes = [missing_nodes; {center_point_for_each_label1(iind, 1), ...
+            center_point_for_each_label1(iind, 2), ...
+            center_point_for_each_label1(iind, 3)}];
+        end
     end
-    
+
     for iind = 1:length(cell_labels_I_care_about2)
         this_label = cell_labels_I_care_about2(iind);
         
-        
         % store node props table... so that node can be added with volume
-        NodePropsTable = table({[num2str(time_index_plus_1,'%05.3d'),'_', num2str(this_label,'%05.3d')]}, center_point_for_each_label2(iind, 1), center_point_for_each_label2(iind, 2), center_point_for_each_label2(iind, 3), ...
+        node_id = {[num2str(time_index_plus_1,'%05.3d'),'_', ...
+            num2str(this_label,'%05.3d')]};
+        NodePropsTable = table(node_id, ...
+            center_point_for_each_label2(iind, 1), ...
+            center_point_for_each_label2(iind, 2), ...
+            center_point_for_each_label2(iind, 3), ...
             'VariableNames',{'Name' 'xpos' 'ypos' 'zpos'});
         
         sample_graph = addnode(sample_graph, NodePropsTable);
-        
+        % Adding nodes to the main graph to show the single ones
+        if numnodes(G_based_on_nn) > 0 && findnode(G_based_on_nn, node_id) == 0
+            G_based_on_nn = addnode(G_based_on_nn, NodePropsTable);
+        elseif numnodes(G_based_on_nn) == 0
+            G_based_on_nn = addnode(G_based_on_nn, NodePropsTable);
+        end
+        if (~isnan(nn(this_label)))
+            color_vec = [color_vec; 2];
+        else
+            color_vec = [color_vec; 2];
+            missing_nodes = [missing_nodes; {center_point_for_each_label2(iind, 1), ...
+            center_point_for_each_label2(iind, 2), ...
+            center_point_for_each_label2(iind, 3)}];
+        end
     end
-    
     for point_index = 1:length(nn)
         
         if (~isnan(nn(point_index)))
-            % make directed edges (in time) between matches + store iou for the match as a graph weight
-            sample_graph = addedge(sample_graph, [num2str(time_index,'%05.3d'),'_', num2str(cell_labels_I_care_about1(nn(point_index)),'%05.3d')],...
-                [num2str(time_index_plus_1,'%05.3d'),'_', num2str(cell_labels_I_care_about2(point_index),'%05.3d')]);
+            % make directed edges (in time) between matches + 
+            % store iou for the match as a graph weight
+            sample_graph = addedge(sample_graph, [num2str(time_index,'%05.3d'),'_', ...
+                num2str(cell_labels_I_care_about1(nn(point_index)),'%05.3d')],...
+                [num2str(time_index_plus_1,'%05.3d'),'_', ...
+                num2str(cell_labels_I_care_about2(point_index),'%05.3d')]);
         end
         if (~isnan(nn(point_index)))
             
-            % make directed edges (in time) between matches + store iou for the match as a graph weight
-            G_based_on_nn = addedge(G_based_on_nn, [num2str(time_index,'%05.3d'),'_', num2str(cell_labels_I_care_about1(nn(point_index)),'%05.3d')],...
-                [num2str(time_index_plus_1,'%05.3d'),'_', num2str(cell_labels_I_care_about2(point_index),'%05.3d')]);
-            %dist = vecnorm(center_point_for_each_label1(nn(point_index)) - center_point_for_each_label2(point_index));
+            % make directed edges (in time) between matches + 
+            % store iou for the match as a graph weight
+            G_based_on_nn = addedge(G_based_on_nn, [num2str(time_index,'%05.3d'),'_', ...
+                num2str(cell_labels_I_care_about1(nn(point_index)),'%05.3d')],...
+                [num2str(time_index_plus_1,'%05.3d'),'_', ...
+                num2str(cell_labels_I_care_about2(point_index),'%05.3d')]);
+            %dist = vecnorm(center_point_for_each_label1(nn(point_index)) - 
+            % center_point_for_each_label2(point_index));
             %disp(dist);
             %if (dist>5)
             %    disp('Large distance detected')
@@ -565,16 +549,37 @@ for time_index_index = inds_to_track
         
     end
     % visualization for checking if everything is correct
-    hold all; plot(sample_graph, 'XData', sample_graph.Nodes.xpos, 'YData', sample_graph.Nodes.ypos, 'ZData', sample_graph.Nodes.zpos, 'EdgeColor', 'k', 'LineWidth', 2.0);
+    hold all; plot(sample_graph, 'XData', sample_graph.Nodes.xpos, ...
+        'YData', sample_graph.Nodes.ypos, 'ZData', sample_graph.Nodes.zpos, ...
+        'NodeCData', color_vec, 'NodeFontSize', config_opts.marker_font_size, ...
+        'EdgeColor', 'k', 'LineWidth', 2.0, 'MarkerSize', config_opts.marker_size, ...
+        'Interpreter','none');
+    colormap(color_map_setting);
+    f2 = figure; f2.Position = [600 50 plot_width plot_height];
+    h2 = plot(sample_graph, 'XData', sample_graph.Nodes.xpos, 'YData', ...
+        sample_graph.Nodes.ypos, 'ZData', sample_graph.Nodes.zpos, ...
+        'NodeCData', color_vec, 'NodeFontSize', config_opts.marker_font_size, ...
+        'EdgeColor', 'k', 'LineWidth', 2.0,'NodeLabel', sample_graph.Nodes.Name, ...
+        'MarkerSize', config_opts.marker_size, 'Interpreter','none');
 
-    figure; 
-    h1 = plot(sample_graph, 'XData', sample_graph.Nodes.xpos, 'YData', sample_graph.Nodes.ypos, 'ZData', sample_graph.Nodes.zpos, 'EdgeColor', 'k', 'LineWidth', 2.0,'NodeLabel',sample_graph.Nodes.Name);
+    hold all;
+    colormap(color_map_setting);
+    sc_plot = scatter3(missing_nodes,'xpos','ypos','zpos', 'filled', ...
+        'Marker','^', MarkerFaceColor='#EDB120');
+    sc_plot.SizeData = 150;
     disp(time_index);
     % DISPLAY CURRENT TIME INDEX (just to make sure that calculation is not stalled).
-    figure;
-    plot(G_based_on_nn, 'Layout', 'layered');    
-    %openvar('G_based_on_nn.Edges')
-    save(fullfile(output_path, 'graph.mat'),'G_based_on_nn');
+    f3 = figure; f3.Position = [300 450 plot_width plot_height];
+    plot(G_based_on_nn, 'Layout', 'layered','Interpreter','none');    
+       
+    %% Save the new graph file 
+    if isfile(next_graph_file)
+        delete(next_graph_file);
+    end
+    next_graph_file = fullfile(config_opts.output_dir, ...
+        strcat(config_opts.track_file_name_prefix,'_',string(config_opts.track_begin_frame),'_', ...
+        string(time_index_plus_1),'_graph.mat'));
+    save(next_graph_file, 'G_based_on_nn');
     disp('time index');
     disp(time_index);
     pause;
@@ -585,7 +590,7 @@ end
 %save('transform_labels_pCloud.mat', 'store_registration');
 %save('matches.mat','store_matches');
 %save('iou_table.mat','store_iou_table');
-save(strcat(output_path, 'graph.mat'),'G_based_on_nn');
+%save(strcat(output_path, 'graph.mat'),'G_based_on_nn');
 
 
 end
