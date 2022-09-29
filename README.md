@@ -20,7 +20,7 @@ After registration, to visualize the transforms you can use the script `Visualiz
 
 ## Tracking 
 
-To perform the lineage tracking, open the script `tree_generation\volume_track_nuclei_divisions.m`. 
+To perform the lineage tracking, run the script `tree_generation\volume_track_nuclei_divisions.m` with the correct config_file setting. 
 
 ## Tree Viz
 
