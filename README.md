@@ -6,7 +6,17 @@ First clone the repo using the command below:
 
 ```git clone https://github.com/abiswas-odu/lineage_track```
 
-Open MATLAB and navigate to the code directory. Then add the CPD folder and subfolders to PATH. 
+### Setup CPD 
+
+1. Open MATLAB and navigate to the code directory called `lineage_track`. Then add the `CPD2` folder and subfolders to PATH. 
+
+2. Then navigate inside the `CPD2` directory and run the command:
+
+```
+cpd_make
+```
+
+*On MAC OSX you will need to install Xcode from the App store*
 
 ## Creating a configuration file
 
