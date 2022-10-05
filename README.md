@@ -6,6 +6,7 @@ First clone the repo using the command below:
 
 ```git clone https://github.com/abiswas-odu/lineage_track```
 
+
 ### Setup CPD 
 
 1. Open MATLAB and navigate to the code directory called `lineage_track`. Then add the `CPD2` folder and subfolders to PATH. 
@@ -16,7 +17,23 @@ First clone the repo using the command below:
 cpd_make
 ```
 
-*On MAC OSX you will need to install Xcode from the App store*
+*On MAC OSX you will need to install Xcode from the App store and run Xcode once to accept the license aggrement.*
+
+## Updating the Installation
+
+To update the MATLAB scripts to the latest version the bese way is to stash your changes and merge from repo. 
+
+1. Open Terminal and navigate to the code directory called `lineage_track`.
+
+2. Execute the commands:
+
+```
+git stash
+git pull
+git stash pop
+```
+
+If you have not changed anything below the %%%%%%% NO CHNAGES BELOW %%%%%%% line, the merge should work.
 
 ## Creating a configuration file
 
