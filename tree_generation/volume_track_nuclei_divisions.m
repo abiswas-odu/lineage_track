@@ -49,7 +49,7 @@ plot_height = 400;
 
 % IMAGE INDICES
 % to consider overall
-which_number_vect = 1:config_opts.track_end_frame+1;
+which_number_vect = config_opts.track_begin_frame:config_opts.track_end_frame+1;
 % to use for tracking
 inds_to_track = config_opts.track_begin_frame:config_opts.track_end_frame;
 
@@ -565,7 +565,7 @@ for time_index_index = inds_to_track
     hold all;
     colormap(color_map_setting);
     sc_plot = scatter3(missing_nodes,'xpos','ypos','zpos', 'filled', ...
-        'Marker','^', MarkerFaceColor='#EDB120');
+        'Marker','^', 'MarkerFaceColor','#EDB120');
     sc_plot.SizeData = 150;
     disp(time_index);
     % DISPLAY CURRENT TIME INDEX (just to make sure that calculation is not stalled).
