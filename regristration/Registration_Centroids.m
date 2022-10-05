@@ -24,7 +24,7 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-config_path = 'C:/Users/ab50/Documents/data/posfai_cell_tracking/registration_test/stack_3_channel_2_obj_left';
+config_path = 'C:/Users/ab50/Documents/git/lineage_track/test';
 
 %% %%%%% NO CHNAGES BELOW %%%%%%%
 
@@ -292,15 +292,17 @@ store_registration = cell(nframes,1);
 
 % order of T/R (2,1,3)
 % AND remove 0 so starts at 1 before conversion 
+loop_begin_frame = first_frame;
 if first_frame == 0
-    first_frame = 1;
+   loop_begin_frame = 1;
 end
-for i=first_frame:final_frame
+
+for i=loop_begin_frame:final_frame - 1
     R = adjusted_registration{i-first_frame+1,1}.Rotation;
     T = adjusted_registration{i-first_frame+1,1}.Translation;
-    %Q = [[0,1,0];[1,0,0];[0,0,1]];
-    %newR = Q*R*Q;
-    %newT = [T(2),T(1),T(3)];
+%     Q = [[0,1,0];[1,0,0];[0,0,1]];
+%     newR = Q*R*Q;
+%     newT = [T(2),T(1),T(3)];
     store_registration{i,1}.Rotation = R;
     store_registration{i,1}.Translation = T;
     store_registration{i,1}.minSigma = adjusted_registration{i-first_frame+1,1}.minSigma;

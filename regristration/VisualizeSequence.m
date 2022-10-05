@@ -41,10 +41,10 @@ voxel_vol = xyz_res^3;
 
 % Initialize empty graph and cell array for storing registration
 % Which image indices to run over...
-which_number_vect = 1:lastTime;
+which_number_vect = 1:config_opts.register_end_frame;
 valid_time_indices = which_number_vect;
 
-for time_index_index = firstTime:lastTime-1
+for time_index_index = firstTime:lastTime
      
     % store this time index
     time_index = valid_time_indices(time_index_index);
