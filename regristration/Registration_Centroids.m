@@ -295,7 +295,7 @@ store_registration = cell(nframes,1);
 if first_frame == 0
     first_frame = 1;
 end
-for i=first_frame:endframe + 1
+for i=first_frame:final_frame
     R = adjusted_registration{i-first_frame+1,1}.Rotation;
     T = adjusted_registration{i-first_frame+1,1}.Translation;
     %Q = [[0,1,0];[1,0,0];[0,0,1]];
