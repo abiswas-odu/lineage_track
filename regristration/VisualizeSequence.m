@@ -12,7 +12,11 @@ addpath(genpath('../CPD2/core'));
 addpath(genpath('../CPD2/data'));
 config_opts = ReadYaml(fullfile(config_path,'config.yaml'));
 
-firstTime = config_opts.register_begin_frame;
+if config_opts.register_begin_frame == 0
+    firstTime = 1;
+else
+    firstTime = config_opts.register_begin_frame;
+end
 lastTime =  config_opts.register_end_frame-1;
 
 RegistrationFileName = fullfile(config_opts.output_dir, ...
