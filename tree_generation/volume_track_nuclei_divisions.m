@@ -49,7 +49,7 @@ plot_height = 400;
 
 % IMAGE INDICES
 % to consider overall
-which_number_vect = config_opts.track_begin_frame:config_opts.track_end_frame+1;
+valid_time_indices = 1:config_opts.track_end_frame+1;
 % to use for tracking
 inds_to_track = config_opts.track_begin_frame:config_opts.track_end_frame;
 
@@ -73,7 +73,6 @@ dist_cent_thres = 100;
 
 % Initialize empty graph and cell array for storing registration
 G_based_on_nn = graph;
-valid_time_indices = which_number_vect;
 store_registration = cell((length(valid_time_indices)-1), 1);
 
 for time_index_index = inds_to_track
@@ -104,7 +103,10 @@ for time_index_index = inds_to_track
         config_opts.suffix_for_embryo, ...
         config_opts.suffix_for_embryo_alternative, ...
         time_index_plus_1);
-  
+    % Skip if labels are missing
+    if size(combined_image1,1) == 1 || size(combined_image2,1) == 1
+        continue
+    end
     % STORE MESHGRID
     [X, Y, Z] = meshgrid(1:size(combined_image1, 2), 1:size(combined_image1, 1), 1:size(combined_image1, 3));
     
