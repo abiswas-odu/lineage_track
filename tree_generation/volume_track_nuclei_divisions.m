@@ -9,7 +9,7 @@ function [] = volume_track_nuclei_divisions()
 
 config_path = 'C:/Users/ab50/Documents/git/lineage_track/test';
 
-%%%%%%% NO CHNAGES BELOW %%%%%%%
+%% %%%%% NO CHNAGES BELOW %%%%%%%
 % CPD and Library Setup
 addpath(genpath('../CPD2/core'));
 addpath(genpath('../CPD2/data'));
