@@ -26,7 +26,7 @@
 
 config_path = 'C:/Users/ab50/Documents/git/lineage_track/test';
 
-%% %%%%% NO CHNAGES BELOW %%%%%%%
+%%  %%%%% NO CHNAGES BELOW %%%%%%%
 
 % Set numThreads to the number of cores in your computer. If your processor
 % supports hyperthreading/multithreading then set it to 2 x [number of cores]

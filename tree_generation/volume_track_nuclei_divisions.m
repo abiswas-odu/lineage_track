@@ -484,7 +484,7 @@ for time_index_index = inds_to_track
         elseif numnodes(G_based_on_nn) == 0
             G_based_on_nn = addnode(G_based_on_nn, NodePropsTable);
         end
-        if ismember(this_label,nn)
+        if ismember(iind,nn)
             color_vec = [color_vec; 1];
         else
             color_vec = [color_vec; 1];
@@ -513,7 +513,7 @@ for time_index_index = inds_to_track
         elseif numnodes(G_based_on_nn) == 0
             G_based_on_nn = addnode(G_based_on_nn, NodePropsTable);
         end
-        if (~isnan(nn(this_label)))
+        if (~isnan(nn(iind)))
             color_vec = [color_vec; 2];
         else
             color_vec = [color_vec; 2];
