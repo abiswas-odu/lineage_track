@@ -340,7 +340,10 @@ for time_index_index = inds_to_track
             disp('Exactly one large descendant; adding all the rest:')
             disp('From');
             disp(cell_labels_I_care_about2(from));
-            bad_matches = [bad_matches,from(find(fv<=vol_thres))];
+            cells_to_add = from(find(fv<=vol_thres));
+            for j=1:length(cells_to_add)
+                bad_matches = [bad_matches,cells_to_add(j)];
+            end
         end
     end
     disp('Adding nuclei with no matches:')
