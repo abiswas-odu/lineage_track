@@ -8,9 +8,7 @@ addpath(genpath('../YAMLMatlab_0.4.3'));
 
 config_opts = ReadYaml(fullfile(config_path,'config.yaml'));
 
-graph_file = fullfile(config_opts.output_dir, ...
-    strcat(config_opts.track_file_name_prefix,'_',string(config_opts.track_begin_frame),'_', ...
-    string(config_opts.track_end_frame + 1),'_graph.mat'));
+graph_file = fullfile(config_opts.output_dir, config_opts.view_file_name);
 load(graph_file) % Graph file from tracking
 tf_table = csvread(config_opts.intensity_file,1,0); % Intensities file 
 leaf_node = config_opts.leaf_node; % The leaf node timestamp ID
@@ -19,7 +17,7 @@ begin_labels = config_opts.begin_labels; % Begin label of intensity line plot
 end_labels = config_opts.end_labels; % End label of intensity line plot
 
 % Set the colormap and other options
-color_map_setting = copper(10); 
+color_map_setting = eval(config_opts.color_map); 
 %color_map_setting = jet(50); 
 %color_map_setting = pink(5); 
 

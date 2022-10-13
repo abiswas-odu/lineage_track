@@ -53,4 +53,3 @@ json_RegistrationFileName = strcat(RegistrationFileName(1:n-3),'json');
 fid = fopen(strcat(data_path,json_RegistrationFileName),'w');
 fprintf(fid, jH);
 fclose(fid);
-

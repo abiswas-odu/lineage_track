@@ -8,9 +8,7 @@ addpath(genpath('../YAMLMatlab_0.4.3'));
 
 config_opts = ReadYaml(fullfile(config_path,'config.yaml'));
 
-graph_file = fullfile(config_opts.output_dir, ...
-    strcat(config_opts.track_file_name_prefix,'_',string(config_opts.track_begin_frame),'_', ...
-    string(config_opts.track_end_frame + 1),'_graph.mat'));
+graph_file = fullfile(config_opts.output_dir, config_opts.view_file_name);
 load(graph_file) % Graph file from tracking
 
 % Set plot sizes 
