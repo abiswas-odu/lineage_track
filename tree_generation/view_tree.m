@@ -16,6 +16,9 @@ plot_width = 1500;
 plot_height = 400;
 marker_size = 5; % The node marker size 
 
+% Set the colormap and other options
+color_map_setting = eval(config_opts.color_map); 
+
 % Label the leafs
 label_vec = {};
 number_of_nodes = size(G_based_on_nn.Nodes);
@@ -33,8 +36,11 @@ label_vec = label_vec';
 f = figure; 
 f.Position = [50 50 plot_width plot_height]; 
 H = plot(G_based_on_nn,'layout','layered', ...
+    'NodeCData', linspace(1,1,number_of_nodes(1)), ...
     'NodeFontAngle', 'italic', ...
     'MarkerSize', marker_size, ...
     'NodeLabel', label_vec, ...
     'LineWidth', 2.0, ...
     'EdgeColor','k','Interpreter','none');
+colormap(color_map_setting);
+
