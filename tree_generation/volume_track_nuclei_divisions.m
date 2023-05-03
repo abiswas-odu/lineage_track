@@ -274,7 +274,7 @@ for time_index_index = inds_to_track
     
     % make the graph..
         
-    [nn_three nd]=kNearestNeighbors(center_point_for_each_label1, center_point_for_each_label2,min(3,length(center_point_for_each_label2)));
+    [nn_three nd]=kNearestNeighbors(center_point_for_each_label1, center_point_for_each_label2,min(3,size(center_point_for_each_label2, 1)));
     %find bad matches
     nn_orig = nn_three;
     disp(nn_orig);
@@ -468,7 +468,7 @@ for time_index_index = inds_to_track
     color_map_setting = [1 0 0; 0 0 1];
     sample_graph = graph;
     missing_nodes  = cell2table(cell(0, 3), 'VariableNames', {'xpos' 'ypos' 'zpos'}); 
-    for iind = 1:length(cell_labels_I_care_about1)
+    for iind = 1:size(cell_labels_I_care_about1, 1)
         this_label = cell_labels_I_care_about1(iind);
         
         % store node props table... so that node can be added with volume
@@ -497,7 +497,7 @@ for time_index_index = inds_to_track
         end
     end
 
-    for iind = 1:length(cell_labels_I_care_about2)
+    for iind = 1:size(cell_labels_I_care_about2, 1)
         this_label = cell_labels_I_care_about2(iind);
         
         % store node props table... so that node can be added with volume
@@ -588,7 +588,6 @@ for time_index_index = inds_to_track
     disp('time index');
     disp(time_index);
     pause;
-    
 end
 
 % Save vector of transformations...

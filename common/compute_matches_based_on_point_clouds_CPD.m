@@ -100,9 +100,9 @@ intersect_vect = intersect(Mnew, M,'rows');
 union_vect = union(Mnew, M,'rows');
 
 Idx = knnsearch(center_point_for_each_label1,center_point_for_each_label2);
-Idx_combined_vect = [Idx, (1:length(center_point_for_each_label2))'];
+Idx_combined_vect = [Idx, (1:size(center_point_for_each_label2, 1))'];
 Idx2 = knnsearch(center_point_for_each_label2,center_point_for_each_label1);
-Idx2_combined_vect = [(1:length(center_point_for_each_label1))', Idx2];
+Idx2_combined_vect = [(1:size(center_point_for_each_label1, 1))', Idx2];
 C = intersect(Idx_combined_vect, Idx2_combined_vect,'rows');
 match_based_on_nearest_neighbors = C;
 
