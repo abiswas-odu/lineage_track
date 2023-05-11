@@ -45,7 +45,7 @@ To run the registration, we have 3 options:
 
 1. `registration\PrecomputeRegistrationTransforms.m`: Original registration developed by Lisa.
 2. `registration\Registration_Centroids.m`: Original centroid based registration developed by David, uses CPD. 
-3. `registration\PrecomputeRegistrationTransforms.m`: New version of registration developed by David which uses intersection over union of spheres to estimate correct matches. Does not use CPD.
+3. `registration\Registration_IoU.m`: New version of registration developed by David which uses intersection over union of spheres to estimate correct matches. Does not use CPD.
 
 For each script, point the `config_path` variable to the folder where you have your `config.yaml`.
 
