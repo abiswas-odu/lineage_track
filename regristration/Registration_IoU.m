@@ -1,12 +1,9 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% This should take ~10 seconds per frame when only using centroids.
+% This should take ~10 seconds per frame.
 %
-% This may increase to 30-60 seconds per frame when also doing a final registration 
-% using the full point clouds.
-%
-% This is runnable with 8GB.
+% This is runnable with 8GB RAM.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -19,7 +16,7 @@
 %       -ptCloud1 and ptCloud2 - full or downsampled point cloud for each frame
 %       -ptCloud1_ids and ptCloud2_ids - ids for each point in point clouds
 %       -volumes1 and volumes2 - volumes of each segmented region
-%       -sigma2 - sigma2 value from CPD registration
+%       -E - Registration loss
 %       -Transform - transformation struct
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -32,8 +29,7 @@ numThreads = 4;
 %%  %%%%% NO CHNAGES BELOW %%%%%%%
 
 % Imports
-addpath(genpath('../CPD2/core'));
-addpath(genpath('../CPD2/data'));
+addpath('IoU_Register');
 addpath(genpath('../YAMLMatlab_0.4.3'));
 addpath(genpath('../klb_io'));
 addpath(genpath('../common'));
@@ -50,6 +46,13 @@ first_frame = config_opts.register_begin_frame;
 final_frame = config_opts.register_end_frame;
 frame_pairs = [(first_frame:final_frame-1).', (first_frame+1:final_frame).'];
 
+% Name of output file
+if isfile(registration_filename)
+    load(registration_filename);
+else
+    registration = [];
+end
+
 % Voxel size before making isotropic
 pixel_size_xy_um = 0.208; % um
 pixel_size_z_um = 2.0; % um
@@ -58,12 +61,8 @@ xyz_res = 0.8320;
 % Volume of isotropic voxel
 voxel_vol = xyz_res^3;
 
-% Threshold to accept registration
-sigma2_threshold = 5;
-
 % Set this to true to exclude the false positives found using the Preprocess_seg_errors script
 use_preprocess_false_positives = false;
-
 % Name of preprocessing output
 preprocess_filename = '';
 if use_preprocess_false_positives
@@ -71,17 +70,15 @@ if use_preprocess_false_positives
 end
 
 % Option to downsample point clouds in the saved output. Will reduce storage space
-downsample_fraction = 1/10;
+downsample_fraction = 1/20;
 
 % numTrials controls how many random initializations to do 
 numTrials = 1e3;
-
-% Do final registration with full point clouds
-final_full_register = false;
+if isfield(config_opts,'num_trials')
+    numTrials = config_opts.num_trials;
+end
 
 tic;
-registration = [];
-
 adjusted_registration = cell(size(frame_pairs, 1), 1);
 for ii = 1:size(frame_pairs, 1)
     
@@ -90,7 +87,7 @@ for ii = 1:size(frame_pairs, 1)
 
     fprintf('Beginning Registration Pair (%d, %d)...', frame_pair(1), frame_pair(2));
     
-    % read in segmented images and rescale 
+    % read in segmented images
     seg1 = read_embryo_frame(config_opts.data_path, config_opts.name_of_embryo, ...
         config_opts.suffix_for_embryo, ...
         config_opts.suffix_for_embryo_alternative, ...
@@ -102,7 +99,7 @@ for ii = 1:size(frame_pairs, 1)
         config_opts.suffix_for_embryo_alternative, ...
         frame_pair(2), ...
         numThreads);
-
+    
     % Exclude regions in segmented image whose mean intensities are within 2 stds of the background
     if use_preprocess_false_positives
         stored_frame_ids = [preprocess.frame_id].';
@@ -154,6 +151,9 @@ for ii = 1:size(frame_pairs, 1)
     stats2 = regionprops3(seg2, 'Volume');
     volumes2 = stats2.Volume(stats2.Volume > 0);
 
+    radii1 = (3 * volumes1 / (4 * pi)).^(1/3);
+    radii2 = (3 * volumes2 / (4 * pi)).^(1/3);
+
     % optionally downsample point clouds
     if downsample_fraction < 1
         p1 = randperm(size(ptCloud1, 1), round(size(ptCloud1, 1) * downsample_fraction));
@@ -172,76 +172,15 @@ for ii = 1:size(frame_pairs, 1)
         ptCloud2 = ptCloud2(p2,:);
     end
 
-    % Initialize variables for CPD
-    step = 1;
-    sigma2 = Inf;
-    sigma2_best = Inf;
-    Transform_best = [];
-
-    Transform_init.R = eye(3);
-    Transform_init.s = 1;
-    Transform_init.method = 'rigid';
-    Transform_init.t = zeros(3, 1);
-
-    % Set the options
-    opt.method='rigid'; % use rigid registration
-    opt.viz=0;          % show every iteration
-    opt.outliers=0;     % do not assume any noise
-
-    opt.normalize=0;    % normalize to unit variance and zero mean before registering (default)
-    opt.scale=0;        % estimate global scaling too (default)
-    opt.rot=1;          % estimate strictly rotational matrix (default)
-    opt.corresp=0;      % do not compute the correspondence vector at the end of registration (default)
-
-    opt.max_it=200;     % max number of iterations
-    opt.tol=1e-5;       % tolerance
-    opt.fgt = 0;        % make faster (for some reason this doesn't produce good results, so set this to 0).
-    while ((sigma2 > sigma2_threshold) && (step <= numTrials))    
-
-        if step == 1
-            Transform_init.R = eye(3);
-        else
-            Transform_init.R = orth(randn(3));
-        end
-
-        % Initialize centroids2
-        centroids2_init = cpd_transform(centroids2, Transform_init);
-
-        % registering Y to X
-        [Transform, ~, sigma2] = cpd_register(centroids1, centroids2_init, opt);
-
-        % Update transformation using initialization
-        Transform.R = Transform.R * Transform_init.R;
-
-        if sigma2 < sigma2_best
-            sigma2_best = sigma2;
-            Transform_best = Transform;
-        end
-
-        step = step + 1;
-    end
-
-    if final_full_register
-        % Do a final registration using the full (or downsampled) point clouds
-        % This registration will be initialized using the best of the centroid trials
-        Transform_init = Transform_best;
-        ptCloud2_init = cpd_transform(ptCloud2, Transform_init);
-    
-        % registering Y to X
-        [Transform, ~, sigma2_best] = cpd_register(ptCloud1, ptCloud2_init, opt);
-    
-        % Update transformation using initialization
-        Transform_best.R = Transform.R * Transform_init.R;
-        Transform_best.t = Transform.t + Transform_init.t;
-    end
+    [Transform_best, E_best] = IoU_register(centroids1, centroids2, radii1, radii2, 1e-4, numTrials);
 
     temp = Transform_best;
     temp.Rotation = Transform_best.R;
     temp.Translation = Transform_best.t.';
     temp.Centroids1 = centroids1;
     temp.Centroids2 = centroids2;
-    temp.NumberTrials = step;
-    temp.minSigma = sigma2_best;
+    temp.NumberTrials = numTrials;
+    temp.minSigma = E_best;
     adjusted_registration{ii,1} = temp;
 
     % Update registration struct
@@ -259,7 +198,7 @@ for ii = 1:size(frame_pairs, 1)
                                      'ptCloud1', ptCloud1, 'ptCloud2', ptCloud2, ...
                                      'ptCloud1_ids', Val1, 'ptCloud2_ids', Val2, ...
                                      'volumes1', volumes1, 'volumes2', volumes2, ...
-                                     'sigma2', sigma2_best, 'Transform', Transform_best);
+                                     'E', E_best, 'Transform', Transform_best);
     else
         registration = struct('frame_pair', frame_pair, ...
                                'centroids1', centroids1, 'centroids2', centroids2, ...
@@ -267,11 +206,11 @@ for ii = 1:size(frame_pairs, 1)
                                'ptCloud1', ptCloud1, 'ptCloud2', ptCloud2, ...
                                'ptCloud1_ids', Val1, 'ptCloud2_ids', Val2, ...
                                'volumes1', volumes1, 'volumes2', volumes2, ...
-                               'sigma2', sigma2_best, 'Transform', Transform_best);
+                               'E', E_best, 'Transform', Transform_best);
     end 
     
 
-    fprintf(' Best Sigma2: %f, Done!\n', sigma2_best);
+    fprintf(' Best E: %f, Done!\n', E_best);
 end
 toc;
 

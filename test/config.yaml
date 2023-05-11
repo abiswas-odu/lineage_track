@@ -13,6 +13,7 @@ output_dir: 'C:/Users/ab50/Documents/git/lineage_track/test'
 # Registeration Options
 register_begin_frame: 6 # Begin with 1 for Lisa's Registration, 0 otherwise. Start with 1 for tracking
 register_end_frame: 20  # Last time point for registration - Lisa's registration should have one more frame than this
+num_trials: 1000        # num_trials controls how many random initializations to do
 register_file_name_prefix: test # prefix before _transforms.mat
 
 

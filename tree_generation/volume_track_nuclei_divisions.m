@@ -8,6 +8,9 @@ function [] = volume_track_nuclei_divisions()
 % SETUP starts here.
 
 config_path = 'C:/Users/ab50/Documents/git/lineage_track/test';
+% Set numThreads to the number of cores in your computer. If your processor
+% supports hyperthreading/multithreading then set it to 2 x [number of cores]
+numThreads = 4;
 
 %% %%%%% NO CHNAGES BELOW %%%%%%%
 % CPD and Library Setup
@@ -97,12 +100,14 @@ for time_index_index = inds_to_track
     combined_image1 = read_embryo_frame(config_opts.data_path, config_opts.name_of_embryo, ...
         config_opts.suffix_for_embryo, ...
         config_opts.suffix_for_embryo_alternative, ...
-        time_index);
+        time_index, ...
+        numThreads);
 
     combined_image2 = read_embryo_frame(config_opts.data_path, config_opts.name_of_embryo, ...
         config_opts.suffix_for_embryo, ...
         config_opts.suffix_for_embryo_alternative, ...
-        time_index_plus_1);
+        time_index_plus_1, ...
+        numThreads);
     % Skip if labels are missing
     if size(combined_image1,1) == 1 || size(combined_image2,1) == 1
         continue

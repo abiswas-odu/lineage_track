@@ -41,7 +41,13 @@ In the test folder you will find an example `config.yaml` file. Make a copy of i
 
 ## Registration 
 
-To run the registration, open `registration\Registration_Centroids.m` or `registration\PrecomputeRegistrationTransforms.m` and point the `config_path` variable to the folder where you have your `config.yaml`.
+To run the registration, we have 3 options:
+
+1. `registration\PrecomputeRegistrationTransforms.m`: Original registration developed by Lisa.
+2. `registration\Registration_Centroids.m`: Original centroid based registration developed by David, uses CPD. 
+3. `registration\PrecomputeRegistrationTransforms.m`: New version of registration developed by David which uses intersection over union of spheres to estimate correct matches. Does not use CPD.
+
+For each script, point the `config_path` variable to the folder where you have your `config.yaml`.
 
 After registration, to visualize the transforms you can use the script `VisualizeSequence.m`. As before, point the `config_path` variable to the folder where you have your `config.yaml`.
 
