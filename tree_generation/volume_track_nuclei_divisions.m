@@ -239,7 +239,7 @@ for time_index_index = inds_to_track
         R = Transform.Rotation;
         t = Transform.Translation;
         [M, D]=size(ptCloud2.Location);
-        Transform.Y=(ptCloud2.Location-repmat(t(1,:), [M,1]))*R';
+        Transform.Y=ptCloud2.Location*R.' + repmat(t(1,:), [M,1]); 
     end
     %sigma2_vect(which_rot) = sigma2;
     store_registration{time_index_index, 1} = Transform;

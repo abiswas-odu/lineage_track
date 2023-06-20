@@ -12,6 +12,7 @@ config_path = 'C:/Users/ab50/Documents/git/lineage_track/test';
 numThreads = 4;
 
 %% %%%%% NO CHNAGES BELOW %%%%%%%
+addpath(genpath('../YAMLMatlab_0.4.3'));
 addpath(genpath('../CPD2/core'));
 addpath(genpath('../CPD2/data'));
 config_opts = ReadYaml(fullfile(config_path,'config.yaml'));
@@ -106,7 +107,7 @@ for time_index_index = firstTime:lastTime
         R = Transform.Rotation;
         t = Transform.Translation;
         [M, D]=size(ptCloud2.Location);
-        Transform.Y=(ptCloud2.Location-repmat(t(1,:), [M,1]))*R';
+        Transform.Y = ptCloud2.Location*R.' + repmat(t(1,:), [M,1]);
     end
     % for no registration
     %newX = X;
